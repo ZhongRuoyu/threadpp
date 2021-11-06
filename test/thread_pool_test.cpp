@@ -15,9 +15,9 @@ std::function<void()> produce_function(int id) {
 }
 
 int main() {
-    thread_pool pool{};
+    thread_pool pool;
     unsigned n = pool.workers_count();
-    std::cout << pool.workers_count() << " worker(s) in the pool" << std::endl;
+    std::cout << n << " worker(s) in the pool" << std::endl;
     for (unsigned i = 0; i < n; ++i) {
         pool.add(produce_function(i));
     }
