@@ -5,7 +5,7 @@
 
 #include "thread_pool.h"
 
-std::function<void()> produce_function(int id) {
+std::function<void()> ProduceFunction(int id) {
     return [=]() {
         std::stringstream stream;
         stream << "job " << id << " handled by worker "
@@ -15,17 +15,17 @@ std::function<void()> produce_function(int id) {
 }
 
 int main() {
-    thread_pool pool;
+    ThreadPool pool;
     unsigned n = pool.workers_count();
     std::cout << n << " worker(s) in the pool" << std::endl;
     for (unsigned i = 0; i < n; ++i) {
-        pool.add(produce_function(i));
+        pool.Add(ProduceFunction(i));
     }
-    pool.join();
+    pool.Join();
     std::cout << "pool joined" << std::endl;
     for (unsigned i = 0; i < n; ++i) {
-        pool.add(produce_function(i));
+        pool.Add(ProduceFunction(i));
     }
-    pool.shutdown();
+    pool.ShutDown();
     std::cout << "pool shut down" << std::endl;
 }

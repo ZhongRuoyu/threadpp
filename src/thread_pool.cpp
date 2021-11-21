@@ -8,103 +8,67 @@
 #include <thread>
 #include <vector>
 
-/**
- * @brief Initialize the thread pool.
- */
-void thread_pool::initialize() {
-    std::unique_lock<std::mutex> lock(queue_mutex);
-    for (unsigned int i = 0; i < num_workers; ++i) {
-        workers.emplace_back(loop);
+void ThreadPool::Initialize() {
+    std::unique_lock<std::mutex> lock(queue_mutex_);
+    for (unsigned i = 0; i < workers_count_; ++i) {
+        workers_.emplace_back(loop_);
     }
 }
 
-/**
- * @brief Construct a new thread pool with a default number of workers.
- */
-thread_pool::thread_pool()
-    : thread_pool::thread_pool(std::thread::hardware_concurrency()) {}
+ThreadPool::ThreadPool()
+    : ThreadPool::ThreadPool(std::thread::hardware_concurrency()) {}
 
-/**
- * @brief Construct a new thread pool with a specified number of workers.
- * @param num_workers the number of workers in the thread pool
- */
-thread_pool::thread_pool(const unsigned int num_workers)
-    : num_workers(num_workers) {
-    initialize();
+ThreadPool::ThreadPool(const unsigned workers_count)
+    : workers_count_(workers_count) {
+    Initialize();
 }
 
-/**
- * @brief Destroy the thread pool.
- */
-thread_pool::~thread_pool() {
-    if (!terminated) {
-        shutdown();
+ThreadPool::~ThreadPool() {
+    if (!terminated_) {
+        ShutDown();
     }
 }
 
-/**
- * @brief Get the number of workers in the pool.
- * @return the number of workers in the pool
- */
-unsigned thread_pool::workers_count() { return num_workers; }
+unsigned ThreadPool::workers_count() { return workers_count_; }
 
-/**
- * @brief Add a job to the pool's job queue. Jobs are handled on a
- * first-come, first-served basis. The job must be a void function with no
- * arguments.
- * @param f the job to be added
- */
-void thread_pool::add(std::function<void()> f) {
+void ThreadPool::Add(std::function<void()> f) {
     {
-        std::unique_lock<std::mutex> lock(queue_mutex);
-        jobs.push(f);
+        std::unique_lock<std::mutex> lock(queue_mutex_);
+        jobs_.push(f);
     }
-    condition.notify_one();
+    condition_.notify_one();
 }
 
-/**
- * @brief Wait for all the jobs in the queue to finish. The pool can be
- * reused until shutdown.
- */
-void thread_pool::join() {
-    terminate = true;
-    condition.notify_all();
-    for (std::thread &worker : workers) {
+void ThreadPool::Join() {
+    terminate_ = true;
+    condition_.notify_all();
+    for (std::thread &worker : workers_) {
         worker.join();
     }
-    workers.clear();
-    terminate = false;
-    initialize();
+    workers_.clear();
+    terminate_ = false;
+    Initialize();
 }
 
-/**
- * @brief Shut down the thread pool gracefully. Unfinished jobs are finished
- * before the shutdown. After the shutdown, the pool cannot be used again.
- */
-void thread_pool::shutdown() {
-    terminate = true;
-    condition.notify_all();
-    for (std::thread &worker : workers) {
+void ThreadPool::ShutDown() {
+    terminate_ = true;
+    condition_.notify_all();
+    for (std::thread &worker : workers_) {
         worker.join();
     }
-    workers.clear();
-    terminated = true;
+    workers_.clear();
+    terminated_ = true;
 }
 
-/**
- * @brief Shut down the thread pool. Jobs in progress are allowed to run
- * until the end, while unstarted jobs are discarded. After the shutdown,
- * the pool cannot be used again.
- */
-void thread_pool::force_shutdown() {
-    force_terminate = true;
-    condition.notify_all();
-    for (std::thread &worker : workers) {
+void ThreadPool::ForceShutdown() {
+    force_terminate_ = true;
+    condition_.notify_all();
+    for (std::thread &worker : workers_) {
         worker.join();
     }
-    workers.clear();
-    while (!jobs.empty()) {
-        jobs.pop();
+    workers_.clear();
+    while (!jobs_.empty()) {
+        jobs_.pop();
     }
-    terminated = true;
+    terminated_ = true;
 }
