@@ -119,6 +119,9 @@ class ThreadPool {
      * before the shutdown. After the shutdown, the pool cannot be used again.
      */
     void Join() {
+        if (joined_) {
+            throw std::runtime_error("Joining a joined ThreadPool.");
+        }
         join_ = true;
         condition_.notify_all();
         for (std::thread &worker : workers_) {
