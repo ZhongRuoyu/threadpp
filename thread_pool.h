@@ -93,7 +93,7 @@ class ThreadPool {
      * @return the result of the job, wrapped in a std::future
      */
     template <class F, class... Args>
-    inline auto Add(F &&f, Args &&...args)
+    auto Add(F &&f, Args &&...args)
         -> std::future<typename std::result_of<F(Args...)>::type> {
         if (join_) {
             throw std::runtime_error("Adding a job to a joined ThreadPool.");
