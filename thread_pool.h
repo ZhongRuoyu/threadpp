@@ -11,14 +11,44 @@
 #include <thread>
 #include <vector>
 
+/**
+ * @brief A simple thread pool.
+ */
 class ThreadPool {
+   private:
+    /**
+     * @brief The number of workers in the thread pool.
+     */
     const unsigned workers_count_;
+
+    /**
+     * @brief Whether a joining operation has been requested.
+     */
     std::atomic<bool> join_{false};
+
+    /**
+     * @brief Whether a joining operation has been completed.
+     */
     std::atomic<bool> joined_{false};
+
+    /**
+     * @brief The condition variable used to dispatch the workers.
+     */
     std::condition_variable condition_;
 
+    /**
+     * @brief The workers in the thread pool.
+     */
     std::vector<std::thread> workers_;
-    std::queue<std::function<void()>> jobs_{};
+
+    /**
+     * @brief The jobs to be done by the workers.
+     */
+    std::queue<std::function<void()>> jobs_;
+
+    /**
+     * @brief The std::mutex to ensure mutual exclusion on the job queue.
+     */
     std::mutex queue_mutex_;
 
     /**
@@ -41,12 +71,10 @@ class ThreadPool {
         }
     };
 
-    /**
-     * @brief Initialize the thread pool.
-     */
-    void Initialize();
-
    public:
+    /**
+     * The copy constructor is forbidden.
+     */
     ThreadPool(ThreadPool &pool) = delete;
 
     /**
@@ -62,7 +90,7 @@ class ThreadPool {
     explicit ThreadPool(const unsigned workers_count)
         : workers_count_(workers_count) {
         std::unique_lock<std::mutex> lock(queue_mutex_);
-        for (unsigned i = 0; i < workers_count_; ++i) {
+        for (unsigned i = 0; i != workers_count_; ++i) {
             workers_.emplace_back(loop_);
         }
     }
@@ -75,6 +103,7 @@ class ThreadPool {
             Join();
         }
     }
+
     /**
      * @brief Get the number of workers in the pool.
      * @return the number of workers in the pool
@@ -124,7 +153,7 @@ class ThreadPool {
         }
         join_ = true;
         condition_.notify_all();
-        for (std::thread &worker : workers_) {
+        for (auto &worker : workers_) {
             worker.join();
         }
         workers_.clear();
