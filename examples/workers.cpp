@@ -1,9 +1,12 @@
-#include "thread_pool.h"
-
+#include <chrono>
 #include <functional>
+#include <future>
 #include <iostream>
 #include <sstream>
 #include <thread>
+#include <vector>
+
+#include "thread_pool.h"
 
 int main() {
     ThreadPool pool;
@@ -22,7 +25,7 @@ int main() {
         }));
     }
 
-    for (auto &&result : results) {
+    for (auto &result : results) {
         std::cout << result.get() << " ";
     }
     std::cout << std::endl;
