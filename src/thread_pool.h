@@ -11,6 +11,8 @@
 #include <thread>
 #include <vector>
 
+namespace threadpp {
+
 class ThreadPool {
    public:
     ThreadPool(ThreadPool &pool) = delete;
@@ -94,5 +96,7 @@ class ThreadPool {
     std::queue<std::function<void()>> jobs_;
     std::mutex queue_mutex_;
 };
+
+}  // namespace threadpp
 
 #endif  // THREAD_POOL_H_

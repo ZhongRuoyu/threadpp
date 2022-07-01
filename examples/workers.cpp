@@ -9,7 +9,7 @@
 #include "thread_pool.h"
 
 int main() {
-    ThreadPool pool;
+    threadpp::ThreadPool pool;
     unsigned n = pool.workers_count();
     std::cout << n << " worker(s) in the pool" << std::endl;
 

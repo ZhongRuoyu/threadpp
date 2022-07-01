@@ -9,7 +9,7 @@
 auto start = std::chrono::steady_clock::now();
 
 int main() {
-    ThreadPool pool(3);
+    threadpp::ThreadPool pool(3);
     std::cout << pool.workers_count() << " worker(s) in the pool" << std::endl;
     for (unsigned i = 0; i != 10; ++i) {
         pool.Add([=]() {
