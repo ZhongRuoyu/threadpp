@@ -8,6 +8,7 @@
 #include <memory>
 #include <mutex>
 #include <queue>
+#include <stdexcept>
 #include <thread>
 #include <vector>
 
@@ -15,80 +16,25 @@ namespace threadpp {
 
 class ThreadPool {
    public:
-    ThreadPool(ThreadPool &pool) = delete;
-
     ThreadPool()
         : ThreadPool::ThreadPool(std::thread::hardware_concurrency()) {}
+    ThreadPool(const ThreadPool &pool) = delete;
+    explicit ThreadPool(unsigned int workers_count);
 
-    explicit ThreadPool(const unsigned workers_count)
-        : workers_count_(workers_count) {
-        std::unique_lock<std::mutex> lock(queue_mutex_);
-        for (unsigned i = 0; i != workers_count; ++i) {
-            workers_.emplace_back(loop_);
-        }
-    }
-
-    ~ThreadPool() {
-        if (!joined_) {
-            Join();
-        }
-    }
-
-    unsigned workers_count() { return workers_count_; }
+    ~ThreadPool();
 
     template <class F, class... Args>
-    auto Add(F &&f, Args &&...args)
-        -> std::future<typename std::result_of<F(Args...)>::type> {
-        if (join_) {
-            throw std::runtime_error("Adding a job to a joined ThreadPool.");
-        }
+    std::future<typename std::result_of<F(Args...)>::type> Add(F &&f,
+                                                               Args &&...args);
 
-        using result_type = typename std::result_of<F(Args...)>::type;
+    void Join();
 
-        auto job = std::make_shared<std::packaged_task<result_type()>>(
-            std::bind(std::forward<F>(f), std::forward<Args>(args)...));
-        std::future<result_type> result = job->get_future();
-
-        {
-            std::unique_lock<std::mutex> lock(queue_mutex_);
-            jobs_.push([=]() { (*job)(); });
-        }
-        condition_.notify_one();
-
-        return result;
-    }
-
-    void Join() {
-        if (joined_) {
-            throw std::runtime_error("Joining a joined ThreadPool.");
-        }
-        join_ = true;
-        condition_.notify_all();
-        for (auto &worker : workers_) {
-            worker.join();
-        }
-        workers_.clear();
-        joined_ = true;
-    }
+    unsigned int workers_count() const { return this->workers_count_; }
 
    private:
-    const std::function<void()> loop_ = [&] {
-        while (true) {
-            std::function<void()> job;
-            {
-                std::unique_lock<std::mutex> lock(queue_mutex_);
-                condition_.wait(lock, [&] { return !jobs_.empty() || join_; });
-                if (join_ && jobs_.empty()) {
-                    break;
-                }
-                job = jobs_.front();
-                jobs_.pop();
-            }
-            job();
-        }
-    };
+    void Loop();
 
-    const unsigned workers_count_;
+    const unsigned int workers_count_;
     std::atomic<bool> join_{false};
     std::atomic<bool> joined_{false};
     std::condition_variable condition_;
@@ -96,6 +42,28 @@ class ThreadPool {
     std::queue<std::function<void()>> jobs_;
     std::mutex queue_mutex_;
 };
+
+template <class F, class... Args>
+std::future<typename std::result_of<F(Args...)>::type> ThreadPool::Add(
+    F &&f, Args &&...args) {
+    if (this->join_) {
+        throw std::runtime_error("Adding a job to a joined ThreadPool.");
+    }
+
+    using ResultType = typename std::result_of<F(Args...)>::type;
+
+    auto job = std::make_shared<std::packaged_task<ResultType()>>(
+        std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+    std::future<ResultType> result = job->get_future();
+
+    {
+        std::unique_lock<std::mutex> lock(this->queue_mutex_);
+        this->jobs_.push([job]() { (*job)(); });
+    }
+    this->condition_.notify_one();
+
+    return result;
+}
 
 }  // namespace threadpp
 
