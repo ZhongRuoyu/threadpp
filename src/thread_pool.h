@@ -10,6 +10,7 @@
 #include <queue>
 #include <stdexcept>
 #include <thread>
+#include <type_traits>
 #include <vector>
 
 namespace threadpp {
@@ -24,8 +25,9 @@ class ThreadPool {
     ~ThreadPool();
 
     template <class F, class... Args>
-    std::future<typename std::result_of<F(Args...)>::type> Add(F &&f,
-                                                               Args &&...args);
+    std::future<
+        typename std::invoke_result_t<std::decay_t<F>, std::decay_t<Args>...>>
+    Add(F &&f, Args &&...args);
 
     void Join();
 
@@ -43,17 +45,31 @@ class ThreadPool {
     std::mutex queue_mutex_;
 };
 
+namespace detail {
+
+template <class T>
+
+std::decay_t<T> DecayCopy(T &&v) {
+    return std::forward<T>(v);
+}
+
+}  // namespace detail
+
 template <class F, class... Args>
-std::future<typename std::result_of<F(Args...)>::type> ThreadPool::Add(
-    F &&f, Args &&...args) {
+std::future<
+    typename std::invoke_result_t<std::decay_t<F>, std::decay_t<Args>...>>
+ThreadPool::Add(F &&f, Args &&...args) {
     if (this->join_) {
         throw std::runtime_error("Adding a job to a joined ThreadPool.");
     }
 
-    using ResultType = typename std::result_of<F(Args...)>::type;
+    using ResultType =
+        typename std::invoke_result_t<std::remove_reference_t<F>,
+                                      std::remove_reference_t<Args>...>;
 
     auto job = std::make_shared<std::packaged_task<ResultType()>>(
-        std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+        std::bind(detail::DecayCopy(std::forward<F>(f)),
+                  detail::DecayCopy(std::forward<Args>(args))...));
     std::future<ResultType> result = job->get_future();
 
     {
