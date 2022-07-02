@@ -1,4 +1,4 @@
-CXXFLAGS += -std=c++17 -Isrc
+CXXFLAGS += -std=c++17 -Iinclude -Isrc
 ARFLAGS +=
 LDFLAGS +=
 

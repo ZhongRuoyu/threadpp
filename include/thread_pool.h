@@ -1,5 +1,5 @@
-#ifndef THREAD_POOL_H_
-#define THREAD_POOL_H_
+#ifndef THREADPP_THREAD_POOL_H_
+#define THREADPP_THREAD_POOL_H_
 
 #include <atomic>
 #include <condition_variable>
@@ -95,4 +95,4 @@ ThreadPool::Add(F &&f, Args &&...args) {
 
 }  // namespace threadpp
 
-#endif  // THREAD_POOL_H_
+#endif  // THREADPP_THREAD_POOL_H_
