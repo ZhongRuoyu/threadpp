@@ -29,12 +29,6 @@ void ThreadPool::Join() {
     for (auto &worker : this->workers_) {
         worker.join();
     }
-    {
-        std::unique_lock<std::mutex> lock(this->queue_mutex_);
-        while (!this->jobs_.empty()) {
-            auto job = this->jobs_.front();
-        }
-    }
     this->workers_.clear();
     this->join_signal_ = false;
 }
@@ -47,7 +41,7 @@ void ThreadPool::Loop() {
             this->condition_.wait(lock, [this] {
                 return !this->jobs_.empty() || this->join_signal_;
             });
-            if (this->join_signal_) {
+            if (this->join_signal_ && this->jobs_.empty()) {
                 break;
             }
             job = this->jobs_.front();
