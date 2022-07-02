@@ -73,8 +73,8 @@ ThreadPool::Add(F &&f, Args &&...args) {
         std::terminate();
     }
 
-    using ResultType = std::invoke_result_t<std::remove_reference_t<F>,
-                                            std::remove_reference_t<Args>...>;
+    using ResultType =
+        std::invoke_result_t<std::decay_t<F>, std::decay_t<Args>...>;
 
     auto job = std::make_shared<std::packaged_task<ResultType()>>(
         std::bind(detail::DecayCopy(std::forward<F>(f)),
