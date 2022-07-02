@@ -37,8 +37,7 @@ class ThreadPool {
     bool joinable() const { return this->joinable_; }
 
     template <class F, class... Args>
-    std::future<
-        typename std::invoke_result_t<std::decay_t<F>, std::decay_t<Args>...>>
+    std::future<std::invoke_result_t<std::decay_t<F>, std::decay_t<Args>...>>
     Add(F &&f, Args &&...args);
 
     void Join();
@@ -68,16 +67,14 @@ std::decay_t<T> DecayCopy(T &&v) {
 }  // namespace detail
 
 template <class F, class... Args>
-std::future<
-    typename std::invoke_result_t<std::decay_t<F>, std::decay_t<Args>...>>
+std::future<std::invoke_result_t<std::decay_t<F>, std::decay_t<Args>...>>
 ThreadPool::Add(F &&f, Args &&...args) {
     if (!this->joinable_) {
         std::terminate();
     }
 
-    using ResultType =
-        typename std::invoke_result_t<std::remove_reference_t<F>,
-                                      std::remove_reference_t<Args>...>;
+    using ResultType = std::invoke_result_t<std::remove_reference_t<F>,
+                                            std::remove_reference_t<Args>...>;
 
     auto job = std::make_shared<std::packaged_task<ResultType()>>(
         std::bind(detail::DecayCopy(std::forward<F>(f)),
