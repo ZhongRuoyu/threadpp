@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <exception>
 #include <functional>
 #include <future>
 #include <memory>
@@ -17,12 +18,23 @@ namespace threadpp {
 
 class ThreadPool {
    public:
-    ThreadPool()
-        : ThreadPool::ThreadPool(std::thread::hardware_concurrency()) {}
-    ThreadPool(const ThreadPool &pool) = delete;
+    ThreadPool() : ThreadPool(std::thread::hardware_concurrency()) {}
+
+    ThreadPool(ThreadPool &&other) = delete;
+
     explicit ThreadPool(unsigned int workers_count);
 
-    ~ThreadPool();
+    ThreadPool(const ThreadPool &) = delete;
+
+    ThreadPool &operator=(ThreadPool &&other) = delete;
+
+    ~ThreadPool() {
+        if (this->joinable_) {
+            std::terminate();
+        }
+    }
+
+    bool joinable() const { return this->joinable_; }
 
     template <class F, class... Args>
     std::future<
@@ -37,8 +49,8 @@ class ThreadPool {
     void Loop();
 
     const unsigned int workers_count_;
-    std::atomic<bool> join_{false};
-    std::atomic<bool> joined_{false};
+    std::atomic<bool> join_signal_;
+    std::atomic<bool> joinable_;
     std::condition_variable condition_;
     std::vector<std::thread> workers_;
     std::queue<std::function<void()>> jobs_;
@@ -59,8 +71,8 @@ template <class F, class... Args>
 std::future<
     typename std::invoke_result_t<std::decay_t<F>, std::decay_t<Args>...>>
 ThreadPool::Add(F &&f, Args &&...args) {
-    if (this->join_) {
-        throw std::runtime_error("Adding a job to a joined ThreadPool.");
+    if (!this->joinable_) {
+        std::terminate();
     }
 
     using ResultType =

@@ -1,3 +1,5 @@
+#include <thread_pool.h>
+
 #include <chrono>
 #include <functional>
 #include <future>
@@ -5,8 +7,6 @@
 #include <sstream>
 #include <thread>
 #include <vector>
-
-#include "thread_pool.h"
 
 int main() {
     threadpp::ThreadPool pool;
@@ -29,4 +29,6 @@ int main() {
         std::cout << result.get() << " ";
     }
     std::cout << std::endl;
+
+    pool.Join();
 }
