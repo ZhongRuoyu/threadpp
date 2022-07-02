@@ -31,6 +31,7 @@ bin/examples/%: out/examples/%.o libthreadpp.a
 	mkdir -p $(@D)
 	$(CXX) $(LDFLAGS) -o $@ $^
 
+
 .PHONY: clean
 clean:
 	rm -rf bin out libthreadpp.a
