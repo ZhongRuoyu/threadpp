@@ -79,15 +79,13 @@ ThreadPool::Add(F &&f, Args &&...args) {
     auto job = std::make_shared<std::packaged_task<ResultType()>>(
         std::bind(detail::DecayCopy(std::forward<F>(f)),
                   detail::DecayCopy(std::forward<Args>(args))...));
-    std::future<ResultType> result = job->get_future();
-
     {
         std::unique_lock<std::mutex> lock(this->queue_mutex_);
         this->jobs_.push([job]() { (*job)(); });
     }
     this->condition_.notify_one();
 
-    return result;
+    return job->get_future();
 }
 
 }  // namespace threadpp
