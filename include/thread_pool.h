@@ -42,24 +42,22 @@ class ThreadPool {
 
     void Join();
 
-    unsigned int workers_count() const { return this->workers_count_; }
+    unsigned int workers_count() const { return this->workers_.size(); }
 
    private:
     void Loop();
 
-    const unsigned int workers_count_;
-    std::atomic<bool> join_signal_;
-    std::atomic<bool> joinable_;
-    std::condition_variable condition_;
     std::vector<std::thread> workers_;
     std::queue<std::function<void()>> jobs_;
     std::mutex queue_mutex_;
+    std::condition_variable condition_;
+    std::atomic<bool> joinable_;
+    std::atomic<bool> join_signal_;
 };
 
 namespace detail {
 
 template <class T>
-
 std::decay_t<T> DecayCopy(T &&v) {
     return std::forward<T>(v);
 }
@@ -73,10 +71,8 @@ ThreadPool::Add(F &&f, Args &&...args) {
         std::terminate();
     }
 
-    using ResultType =
-        std::invoke_result_t<std::decay_t<F>, std::decay_t<Args>...>;
-
-    auto job = std::make_shared<std::packaged_task<ResultType()>>(
+    auto job = std::make_shared<std::packaged_task<
+        std::invoke_result_t<std::decay_t<F>, std::decay_t<Args>...>()>>(
         std::bind(detail::DecayCopy(std::forward<F>(f)),
                   detail::DecayCopy(std::forward<Args>(args))...));
     {
