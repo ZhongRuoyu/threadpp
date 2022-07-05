@@ -15,7 +15,7 @@ ThreadPool::ThreadPool(const unsigned int workers_count)
     : joinable_(true), join_signal_(false) {
     std::unique_lock<std::mutex> lock(this->queue_mutex_);
     for (unsigned int i = 0; i != workers_count; ++i) {
-        this->workers_.emplace_back(std::bind(&ThreadPool::Loop, this));
+        this->workers_.emplace_back(&ThreadPool::Loop, this);
     }
 }
 
