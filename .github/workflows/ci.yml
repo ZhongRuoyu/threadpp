@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-clang:
+    strategy:
+      matrix:
+        target:
+          - all
+          - examples
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang
+      - name: Build
+        run: make -j$(nproc) CC=clang CXX=clang++ ${{ matrix.target }}
+
+  build-gcc:
+    strategy:
+      matrix:
+        target:
+          - all
+          - examples
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+      - name: Build
+        run: make -j$(nproc) CC=gcc CXX=g++ ${{ matrix.target }}
+
+  build-macos:
+    strategy:
+      matrix:
+        target:
+          - all
+          - examples
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build
+        run: make -j$(sysctl -n hw.logicalcpu) ${{ matrix.target }}
