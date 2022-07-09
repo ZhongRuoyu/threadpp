@@ -1,6 +1,9 @@
-CXXFLAGS += -std=c++17 -Iinclude -Isrc
-ARFLAGS +=
-LDFLAGS +=
+CXXFLAGS = -O2
+LDFLAGS =
+ARFLAGS = rv
+
+COMMON_CXXFLAGS = -std=c++17 -Iinclude -Isrc
+COMMON_LDFLAGS =
 
 SRCS = $(shell find src -name *.cc | sort)
 OBJS = $(SRCS:src/%.cc=out/%.o)
@@ -33,16 +36,16 @@ libthreadpp.a: $(OBJS)
 
 out/%.o: src/%.cc
 	mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $(SRC_DEPFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(COMMON_CXXFLAGS) $(SRC_CXXFLAGS) $(SRC_DEPFLAGS) -c -o $@ $<
 
 
 out/examples/%.o: examples/%.cc
 	mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $(EXAMPLE_CXXFLAGS) $(EXAMPLE_DEPFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(COMMON_CXXFLAGS) $(EXAMPLE_CXXFLAGS) $(EXAMPLE_DEPFLAGS) -c -o $@ $<
 
 bin/examples/%: out/examples/%.o libthreadpp.a
 	mkdir -p $(@D)
-	$(CXX) -o $@ $< $(LDFLAGS) $(EXAMPLE_LDFLAGS)
+	$(CXX) -o $@ $< $(LDFLAGS) $(COMMON_LDFLAGS) $(EXAMPLE_LDFLAGS)
 
 
 .PHONY: clean
