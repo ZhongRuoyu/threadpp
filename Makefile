@@ -2,8 +2,8 @@ CXXFLAGS = -O2
 LDFLAGS =
 ARFLAGS = rv
 
-COMMON_CXXFLAGS = -std=c++17 -Iinclude -Isrc
-COMMON_LDFLAGS =
+COMMON_CXXFLAGS = -std=c++17 -pthread -Iinclude -Isrc
+COMMON_LDFLAGS = -pthread
 
 SRCS = $(shell find src -name *.cc | sort)
 OBJS = $(SRCS:src/%.cc=out/%.o)
